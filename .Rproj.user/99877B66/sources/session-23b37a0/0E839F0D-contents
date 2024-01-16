@@ -1,0 +1,295 @@
+---
+title: "PEC 3"
+author: "UOC"
+output: 
+  html_document :
+  word_document :
+  pdf_document :
+       latex_engine: xelatex
+linkcolor: blue
+---
+# NOMBRE: Borja Villena Pardo
+# Introducción
+
+
+La empresa encuestadora aZigna-2 ha entrevistado a una muestra de 129880 pasajeros que prefirieron coger un avión, al nuevo tren de alta velocidad, para llegar a Badajoz. 
+
+Los datos de la empresa aZigna-2 proceden del siguiente enlace de [Kaggle](https://www.kaggle.com/datasets/mysarahmadbhat/airline-passenger-satisfaction?resource=download). El fichero para realizar la PEC 3 es *“data_pac3”* y lo encontraréis en formato csv.
+
+Las variables que se encuentran en el dataset son las siguientes:
+
+• *ID* : Identificador único de pasajeros.
+
+• *Type.of.Travel* : Finalidad del vuelo (negocios/personal).
+
+• *Class* : Tipo de vuelo (Economy Plus, Economy, Business).
+
+• *Flight.Distance* : Distancia de vuelo en millas.
+
+
+Os puede ser útil consultar el siguiente material:
+
+- Manuales de Intervalo de Confianza y del Teorema del Límite Central.
+- Actividades Resueltas del Reto 3 (Intervalo de Confianza y del Teorema del Límite Central).
+
+Hay que entregar la práctica en fichero pdf o html (exportando el resultado final a pdf o html por ejemplo). Se recomienda generar el informe con Rmarkdown que genera
+automáticamente el pdf/html a entregar.
+
+
+```{r,eval=TRUE,echo=FALSE}
+data_pac3<-read.csv("data_pac3.csv", sep=",", stringsAsFactors=TRUE)
+```
+
+# Pregunta 1 (resolver con R). (3.5 puntos).
+
+Debido a la crisis energética y sanitaria, la aerolínea que estamos analizando decidió renovar los filtros de aire de los aviones, comprando unos nuevos en Amiexpress. Se ha notificado que estos filtros fallan a veces, pero por suerte solo ocurre en el 40% de las ocasiones. Si la aerolínea solo ha renovado 5 filtros:
+
+
+a) ¿Qué distribución normal se aproxima a esta distribución binomial? (1.25 puntos).
+
+
+
+Respuesta Borja Villena Pardo:
+
+Una distribución binomial $B(n,p)$ se puede aproximar a una distribución normal, siempre que $n$ sea grande y 
+$p$ no esté muy próxima a $0$ o $1$.
+
+La aproximación consiste en utilizar una distribución normal con la misma
+media y desviación típica que la distribución binomial. En la práctica se utiliza la aproximación cuando:
+$$n\geq 30$$ $$n\cdot p\geq 5$$ $$n\cdot q\geq 5$$
+
+En cuyo caso, tipificando se obtiene la normal estándar correspondiente:
+
+$$
+\frac{X - n\cdot p}{\sqrt{n\cdot p\cdot q}}\approx N(0,1)
+$$
+
+```{r,eval=TRUE,echo=TRUE}
+#Espacio para solución
+
+    
+# Definimos los parámetros de la distribución binomial teniendo en cuenta que
+# n = número de filtros, p = probabilidad de fallo, q = 1 - p
+n <- 5
+p <- 0.4
+q <- 1 - p
+
+# Cálculo de la media y la desviación estándar de la distribución binomial
+media_binom <- n * p
+desv_stand_binom <- sqrt(n * p * q)
+
+# Impresión de resultados
+cat("Media de la distribución binomial:", media_binom, "\n")
+cat("Desviación estándar de la distribución binomial:", desv_stand_binom, "\n")
+
+
+
+```
+En nuestro caso, la distribución normal estándar que se aproxima a la distribución binomial sería:
+
+$$ Z = \frac{X - n\cdot p}{\sqrt{n\cdot p\cdot q}}\approx N(0,1) $$
+
+$$ Z = \frac{X - \mu}{\sigma} \approx N(0,1) $$
+
+$$ Z = \frac{X - 2}{1.095445} \approx N(0,1) $$
+
+b) Calcule P (X<1) mediante la aproximación normal de la binomial. (1.25 puntos).
+
+
+```{r,eval=TRUE,echo=TRUE}
+#Espacio para solución
+
+z <- (1 - media_binom) / desv_stand_binom
+prob_x_menorque_1 <- pnorm(z)
+
+cat('La probabilidad de X < 1 mediante la aproximación normal de la binomial es:',
+    prob_x_menorque_1, ',es decir, del', round(prob_x_menorque_1*100, 2),'%')
+```
+
+
+c) En este caso, ¿la aproximación normal es adecuada? Explique las razones. (1 punto).
+
+
+Espacio para solución:
+
+
+Tal y como hemos explicado en la respuesta del apartado a), una distribución binomial $B(n,p)$ se puede aproximar a una distribución normal, siempre que $n$ sea grande y $p$ no esté muy próxima a $0$ o $1$.
+
+En este caso concreto $n\geq 30$ no se cumple, sino que $n =5$, por lo que la muestra no es lo suficientemente grande
+como para que la distribución normal asociada sea precisa.
+
+A su vez, $p$  en nuestro caso está próximo a $0$, $P(X< 1) = 0.1806552$, por lo que podemos deducir que en este caso
+concreto es mejor depender directamente de la distribución binomial.
+
+
+# Pregunta 2 (resolver con R). (3.5 puntos).
+
+La empresa aZigna-2 publica todos los años información relevante para mejorar los servicios de las aerolíneas. Este año ha publicado que los pasajeros de aviones de tipología Business recorren una distancia media vuelo, distribuida de manera normal, con una µ = 1670 km y una $\sigma$ = 150 km. Nuestra aerolínea de estudio trabaja con este tipo de modelo de aviones y opina que la media es mayor de 1670 km.
+
+a)	Se desea realizar un estudio para estimar (con un nivel de confianza del 90%) la distancia media por vuelo de tipología Business con un margen de error de 10 km. Suponiendo que la desviación estándar de los vuelos de tipología Business es $\sigma$ = 150 km, ¿qué tamaño de muestra debería utilizar para este estudio? (1.25 puntos).
+
+Espacio para solución:
+
+- Partiendo de que el margen de error $ME$ se puede calcular de la siguiente manera:
+
+$$ ME = Z\cdot \frac{\sigma}{\sqrt{n}} $$
+podemos aislar $n$:
+
+$$ n\geq Z^2\cdot \frac{\sigma^2}{ME^2} $$
+
+```{r,eval=TRUE,echo=TRUE}
+#Espacio para solución
+
+nivel_conf <- 0.9
+me <- 10
+sigma <- 150
+
+z_90 <- round(qnorm((1 + nivel_conf) / 2), 3)
+
+n_90 <- ((z_90 * sigma) / me)^2
+
+tamaño_muestra <- round(n_90)
+
+cat('El tamaño de la muestra debería ser: ', tamaño_muestra)
+
+```
+
+
+
+b) Finalmente se llevó a cabo el estudio usando los datos proporcionados en el dataset *data_pac3*, ignorando la recomendación sobre el tamaño de la muestra. Construya un intervalo de confianza del 95% para la distancia media poblacional de los vuelos de tipología Business (__Suponga normalidad y que $\sigma$ es desconocida__). (1.25 puntos).
+
+*Nota:* Los km vienen en la variable "Flight.Distance" y la tipología de vuelos Business corresponde con la variable "Class" y el nivel Business.
+
+Espacio para solución:
+
+Para construir el intervalo de confianza del 95% , queremos conocer la media poblacional partiendo de una desviación
+típica desconocida. Al tratarse de una distribución normal, debemos usar la t-Student con n-1 grados de libertad.
+
+Por ello debemos trabajar con la variable aleatoria siguiente:
+
+$$ \frac{\overline{X}-\mu}{\frac{s}{\sqrt{n}}} $$
+
+Aislando $\mu$ nos quedaría:
+
+$$\overline{X} - t \cdot \frac{s}{\sqrt{n}} \leq \mu \leq \overline{X} + t \cdot \frac{s}{\sqrt{n}}$$
+
+Consultando las tablas de t-Student, podemos comprobar que el valor crítico de $t$ para un nivel de 95% es aquel que verifica:
+
+$$P(t_{n-1} > t^* = (1-0.95)/2 = 0.025$$
+
+consultando las tablas obtenemos que 
+$$P(1-0.025) = 0.975 \Rightarrow t^* < 1.98$$
+ya que los grados de libertad son $> 100$.
+
+Por lo tanto nos quedaría que el intervalo de confianza al 95% se calcularía:
+
+$$\overline{X} - (t^* < 1.98) \cdot \frac{s}{\sqrt{n}} \leq \mu \leq \overline{X} + (t^* < 1.98) \cdot \frac{s}{\sqrt{n}} = 0.95$$
+
+
+```{r,eval=TRUE,echo=TRUE}
+#Espacio para solución
+
+prob <- 0.95
+
+business <- data_pac3[data_pac3$Class == 'Business', ]
+
+media_muestra <- mean(business$Flight.Distance)
+
+desvtip_muestra <- sd(business$Flight.Distance)
+
+gr_libertad <- length(business$Flight.Distance) - 1
+
+vc_95 <-  round(qt(1-((1-prob) /2), df = gr_libertad),2)
+
+cat('Efectivamente el valor crítico t es menor que 1.98. Su valor redondeado ',
+    'a dos decimales es: ', vc_95)
+
+a <- round(media_muestra - vc_95*(desvtip_muestra / sqrt(length(business$Flight.Distance))), 3)
+b <- round(media_muestra + vc_95*(desvtip_muestra / sqrt(length(business$Flight.Distance))), 3)
+
+intervalo_95 <- c(a, ',', b)
+
+cat('El intervalo de confianza con un nivel del 95% para la distancia media',
+    'poblacional en km de los vuelos de tipo Business es: ', 
+    '(',intervalo_95,')')
+```
+
+
+c) ¿Se podría rechazar la afirmación de la empresa aZigna-2 de que la distancia media de los pasajeros en vuelos con aviones de tipología Business es de 1670 km basándose en el intervalo de confianza que ha construido anteriormente? (1 punto).
+
+Espacio para solución
+
+Para analizar si la afirmación de la empresa puede ser rechazada o no teniendo en cuenta el intervalo de confianza
+calculado anteriormente con un nivel del 95%, debemos comprobar si el dato dado por la empresa está incluido o no dentro del intervalo. Para ello podemos analizarlo usando el código siguiente:
+
+```{r,eval=TRUE,echo=TRUE}
+
+mean_empresa <- 1670
+
+
+if (a > mean_empresa | b < mean_empresa) {
+  cat("La afirmación de la empresa podría ser rechazada.\n")
+} else {
+  cat("No hay evidencia para rechazar la afirmación de la empresa.\n")
+}
+
+```
+
+
+# Pregunta 3 (resolver con R). (3 puntos).
+
+Se están analizando los vuelos con una distancia recorrida estrictamente mayor de 1000 km (variable "Flight.Distance").
+
+a) Encuentre un intervalo de confianza al 99% para la proporción de vuelos con una distancia recorrida estrictamente mayor de 1000 km. Haga este apartado siguiendo las fórmulas de las notas de estudio, y usando R para hacer los diferentes cálculos. (1.5 puntos).
+
+```{r,eval=TRUE,echo=TRUE}
+#Espacio para solución
+
+dist_1000 <- data_pac3[data_pac3$Flight.Distance > 1000, ]
+
+cat('Mostramos resultado de usar la función t.test() para la proporción de',
+    'vuelos solicitada: \n\n')
+
+interv_99 <- t.test(dist_1000$Flight.Distance, conf.level = 0.99)
+
+print(interv_99)
+
+cat('El intervalo de confianza al 99% para la proporción de los vuelos con',
+    'una distancia recorrida mayor a 1000 km es: ',interv_99$conf.int)
+
+
+```
+
+
+b) Si queremos calcular el intervalo de confianza del apartado anterior con un nivel de confianza del 99% y con una precisión de 0.001, ¿qué tamaño de muestra necesitamos? (1.5 puntos).
+
+Espacio para solución:
+
+Para llevar a cabo este cálculo determinaremos el tamaño de la muestra así:
+
+- $n \rightarrow$  Tamaño muestra 
+- $\widehat{p} \rightarrow$  Proporción de la muestra 
+- $ME \rightarrow$  Margen de error 
+- $Z \rightarrow$  Valor crítico   
+
+$$ n = Z^2\cdot {\frac {\widehat{p} \cdot (1-\widehat{p})}{ME^2}} $$   
+
+```{r,eval=TRUE,echo=TRUE}
+#Espacio para solución
+
+
+prob_99 <- 0.99 
+
+margen_error <- 0.001
+
+vc_99 <-  round(qt(1-((1-prob_99) /2), df = length(dist_1000$Flight.Distance) - 1),3)
+
+proporcion_muestra <- (length(dist_1000$Flight.Distance)/ length(data_pac3$Flight.Distance))
+
+n_muestra <- (vc_99**2)*((proporcion_muestra*(1 - proporcion_muestra))/ (margen_error)**2)
+
+cat('La muestra necesaria para calcular el intervalo de confianza del apartado',
+'anterior con un nivel de confianza del 99% y con una precisión de 0.001',
+'debería de ser de: ',n_muestra , 'elementos.')
+
+```
